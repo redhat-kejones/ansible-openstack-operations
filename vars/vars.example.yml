@@ -1,0 +1,9 @@
+openstack_public_ip: 192.0.2.10
+
+general_os_auth:
+  auth_url: http://{{ openstack_public_ip }}:5000/v3
+  username: openstack
+  password: p@ssw0rd
+  project_name: operators
+  project_domain_name: default
+  user_domain_name: default

@@ -1,0 +1,9 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Check connectivity and authentication to the OpenStack Cloud
+    os_auth:
+      auth: "{{ general_os_auth }}"
+
+  - debug:
+      var: service_catalog
