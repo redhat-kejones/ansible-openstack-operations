@@ -28,3 +28,92 @@
     loop: "{{ openstack_admin_usernames }}"
     loop_control:
       loop_var: current_openstack_admin_username
+
+  - name: Update quotas on new project
+    os_quota:
+      auth: "{{ general_os_auth }}"
+      name: "{{ openstack_project_name }}"
+      backup_gigabytes: "{{ openstack_project_quotas_backup_gigabytes | default(omit) }}"
+      backups: "{{ openstack_project_quotas_backups | default(omit) }}"
+      cores: "{{ openstack_project_quotas_cores | default(omit) }}"
+      fixed_ips: "{{ openstack_project_quotas_fixed_ips | default(omit) }}"
+      floating_ips: "{{ openstack_project_quotas_floating_ips | default(omit) }}"
+      floatingip: "{{ openstack_project_quotas_floatingip | default(omit) }}"
+      gigabytes: "{{ openstack_project_quotas_gigabytes | default(omit) }}"
+      injected_file_size: "{{ openstack_project_quotas_injected_file_size | default(omit) }}"
+      injected_files: "{{ openstack_project_quotas_injected_files | default(omit) }}"
+      injected_path_size: "{{ openstack_project_quotas_injected_path_size | default(omit) }}"
+      instances: "{{ openstack_project_quotas_instances | default(omit) }}"
+      key_pairs: "{{ openstack_project_quotas_key_pairs | default(omit) }}"
+      loadbalancer: "{{ openstack_project_quotas_loadbalancer | default(omit) }}"
+      per_volume_gigabytes: "{{ openstack_project_quotas_per_volume_gigabytes | default(omit) }}"
+      pool: "{{ openstack_project_quotas_pool | default(omit) }}"
+      port: "{{ openstack_project_quotas_port | default(omit) }}"
+      properties: "{{ openstack_project_quotas_properties | default(omit) }}"
+      ram: "{{ openstack_project_quotas_ram | default(omit) }}"
+      security_group_rule: "{{ openstack_project_quotas_security_group_rule | default(omit) }}"
+      security_group: "{{ openstack_project_quotas_security_group | default(omit) }}"
+      server_group_members: "{{ openstack_project_quotas_server_group_members | default(omit) }}"
+      server_groups: "{{ openstack_project_quotas_server_groups | default(omit) }}"
+      snapshots: "{{ openstack_project_quotas_snapshots | default(omit) }}"
+      volumes: "{{ openstack_project_quotas_volumes | default(omit) }}"
+
+  - name: Create an initial tenant network in the new project
+    os_network:
+      auth:
+        auth_url: "{{ general_os_auth.auth_url }}"
+        username: "{{ general_os_auth.username }}"
+        password: "{{ general_os_auth.password }}"
+        project_name: "{{ openstack_project_name }}"
+        project_domain_name: "{{openstack_domain | default('default') }}"
+        user_domain_name: "{{openstack_domain | default('default') }}"
+      state: present
+      name: "{{ openstack_project_tenant_network_name | default(openstack_project_name + '-private-a') }}"
+
+  - name: Create initial tenant subnet in the new project
+    os_subnet:
+      auth:
+        auth_url: "{{ general_os_auth.auth_url }}"
+        username: "{{ general_os_auth.username }}"
+        password: "{{ general_os_auth.password }}"
+        project_name: "{{ openstack_project_name }}"
+        project_domain_name: "{{openstack_domain | default('default') }}"
+        user_domain_name: "{{openstack_domain | default('default') }}"
+      state: present
+      network_name: "{{ openstack_project_tenant_network_name | default(openstack_project_name + '-private-a') }}"
+      name: "{{ openstack_project_tenant_network_subnet_name | default(openstack_project_name + '-private-a-subnet') }}"
+      cidr: "{{ openstack_project_tenant_network_subnet_cidr | default('192.0.2.0/24') }}"
+      dns_nameservers:
+         - "{{ dns_server_local | default('1.1.1.1') }}"
+
+  - name: Create a router and attach the tenant network
+    os_router:
+      auth: "{{ general_os_auth }}"
+      state: present
+      name: router-{{ openstack_project_name }}
+      network: "{{ openstack_external_network_name | default('public') }}"
+      enable_snat: yes
+      project: "{{ openstack_project_name }}"
+      interfaces:
+        - "{{ openstack_project_name }}-private-a-subnet"
+
+  - name: Get the username running the project creation
+    become: false
+    local_action: command whoami
+    register: username_on_the_host
+
+  - name: Add keypair using ~/.ssh/id_rsa.pub from current user
+    os_keypair:
+      auth:
+        auth_url: "{{ general_os_auth.auth_url }}"
+        username: "{{ general_os_auth.username }}"
+        password: "{{ general_os_auth.password }}"
+        project_name: "{{ openstack_project_name }}"
+        project_domain_name: "{{openstack_domain | default('default') }}"
+        user_domain_name: "{{openstack_domain | default('default') }}"
+      state: present
+      name: "{{ openstack_project_name }}-{{ username_on_the_host.stdout }}-keypair"
+      public_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+  #TODO: Start here on return
+  #Need to add basic rules for Security Groups (both default and ability to add other security groups)
