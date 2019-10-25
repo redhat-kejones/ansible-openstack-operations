@@ -5,12 +5,26 @@
     os_auth:
       auth: "{{ general_os_auth }}"
 
+  - name: Set or Create new project name
+    set_fact:
+      openstack_project_name: "{{ openstack_project_name | default('project_' + 9999 | random | to_uuid) }}"
+
   - name: Create the project
     os_project:
       auth: "{{ general_os_auth }}"
       #endpoint_type: admin
       state: present
-      name: "{{ openstack_project_name | default('project_' + 9999 | random | to_uuid) }}"
+      name: "{{ openstack_project_name }}"
       description: "{{ openstack_project_description | default('Created by OpenStack Automation') }}"
       domain_id: "{{ openstack_domain | default('default') }}"
       enabled: True
+
+  - name: Add admin role on new project for adminstration users
+    os_user_role:
+      auth: "{{ general_os_auth }}"
+      user: "{{ current_openstack_admin_username }}"
+      role: admin
+      project: "{{ openstack_project_name }}"
+    loop: "{{ openstack_admin_usernames }}"
+    loop_control:
+      loop_var: current_openstack_admin_username
