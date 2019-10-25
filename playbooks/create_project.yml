@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Check connectivity and authentication to the OpenStack Cloud
+    os_auth:
+      auth: "{{ general_os_auth }}"
+
+  - name: Create the project
+    os_project:
+      auth: "{{ general_os_auth }}"
+      #endpoint_type: admin
+      state: present
+      name: "{{ openstack_project_name | default('project_' + 9999 | random | to_uuid) }}"
+      description: "{{ openstack_project_description | default('Created by OpenStack Automation') }}"
+      domain_id: "{{ openstack_domain | default('default') }}"
+      enabled: True
