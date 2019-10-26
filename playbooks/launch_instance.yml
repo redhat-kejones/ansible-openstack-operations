@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+  vars:
+    os_auth: "{{ general_os_auth }}"
+    os_instance_key_name: "{{ openstack_keypair_name | default('operator') }}"
+    os_instance_image: "{{ openstack_instance_image | default('cirros') }}"
+    os_instance_flavor: "{{ openstack_instance_flavor | default('m1.tiny') }}"
+    os_instance_floating_ip: "{{ openstack_instance_floating_ip | default('') }}"
+    os_instance_auto_ip: yes
+  tasks:
+  - name: Check connectivity and authentication to the OpenStack Cloud
+    os_auth:
+      auth: "{{ general_os_auth }}"
+
+  - name: Launch an OpenStack instance
+    include_role:
+      name: RedHatGov.openstack_instance

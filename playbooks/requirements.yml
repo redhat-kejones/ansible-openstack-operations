@@ -1,0 +1,6 @@
+#from galaxy
+- src: RedHatGov.copy_local_pub_key
+- src: RedHatGov.rhsm
+- src: RedHatGov.rhv_vm
+- src: RedHatGov.openstack_instance
+- src: RedHatGov.tower
