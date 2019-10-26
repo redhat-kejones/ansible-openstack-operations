@@ -101,6 +101,7 @@
     become: false
     local_action: command whoami
     register: username_on_the_host
+    changed_when: false
 
   - name: Add keypair using ~/.ssh/id_rsa.pub from current user
     os_keypair:
@@ -115,5 +116,33 @@
       name: "{{ openstack_project_name }}-{{ username_on_the_host.stdout }}-keypair"
       public_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
 
-  #TODO: Start here on return
-  #Need to add basic rules for Security Groups (both default and ability to add other security groups)
+  - name: Create security group(s) for new project
+    os_security_group:
+      auth: "{{ general_os_auth | default(omit) }}"
+      name: "{{ sec_group.name }}"
+      description: "{{ sec_group.description | default(omit) }}"
+      project: "{{ openstack_project_name }}"
+      state: present
+    loop: "{{ openstack_project_security_groups }}"
+    loop_control:
+      loop_var: sec_group
+    register: openstack_project_create_security_groups
+  
+  - name: Create security group rule(s) for new project
+    os_security_group_rule:
+      auth: "{{ general_os_auth | default(omit) }}"
+      security_group: "{{ sec_group.0.name }}"
+      direction: "{{ sec_group.1.direction | default(omit) }}"
+      ethertype: "{{ sec_group.1.ethertype | default(omit) }}"
+      interface: "{{ sec_group.1.interface | default(omit) }}"
+      port_range_max: "{{ sec_group.1.port_range_max | default(omit) }}"
+      port_range_min: "{{ sec_group.1.port_range_min | default(omit) }}"
+      protocol: "{{ sec_group.1.protocol | default(omit) }}"
+      remote_group: "{{ sec_group.1.remote_group | default(omit) }}"
+      remote_ip_prefix: "{{ sec_group.1.remote_ip_prefix | default(omit) }}"
+      project: "{{ openstack_project_name }}"
+      state: present
+    loop: "{{ query('subelements', openstack_project_security_groups, 'rules') }}"
+    loop_control:
+      loop_var: sec_group
+    register: openstack_project_create_security_group_rules
