@@ -1,0 +1,45 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Check connectivity and authentication to the OpenStack Cloud
+    os_auth:
+      auth: "{{ general_os_auth }}"
+
+  - debug:
+      var: auth_token
+
+  - debug:
+      var: service_catalog
+
+  - name: Get info for extneral network
+    os_network:
+      auth: "{{ general_os_auth }}"
+      state: present
+      name: "{{ openstack_external_network | default('public') }}"
+    register: openstack_external_network_results
+
+  - debug:
+      var: openstack_external_network_results
+
+  - debug:
+      var: openstack_external_network_results.id
+
+  - name: "Create floating ip"
+    uri:
+      url: "http://{{ openstack_public_ip }}:9696/v2.0/floatingips"
+      method: POST
+      status_code: 201
+      headers:
+        X-Auth-Token: "{{ auth_token }}"
+      body_format: json
+      body: '
+        {
+          "floatingip": {
+            "floating_network_id": "{{ openstack_external_network_results.id }}",
+            "floating_ip_address": "{{ openstack_floating_ip }}"
+          }
+        }'
+    register: floating_ip_create
+    loop: "{{ openstack_floating_ips }}"
+    loop_control:
+      loop_var: openstack_floating_ip

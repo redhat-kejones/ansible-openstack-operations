@@ -1,12 +1,16 @@
 ---
 - hosts: localhost
   vars:
+    openstack_instance_name: test.{{ domain }}
+    openstack_instance_floating_ip: 10.100.2.70
+    openstack_instance_auto_ip: no
     os_auth: "{{ general_os_auth }}"
-    os_instance_key_name: "{{ openstack_keypair_name | default('operator') }}"
+    os_instance_name: "{{ openstack_instance_name | default('os-instance-'+ 9999 | random | to_uuid + '.'+ domain) }}"
+    os_instance_key_name: "{{ openstack_instance_keypair_name | default('operator') }}"
     os_instance_image: "{{ openstack_instance_image | default('cirros') }}"
     os_instance_flavor: "{{ openstack_instance_flavor | default('m1.tiny') }}"
     os_instance_floating_ip: "{{ openstack_instance_floating_ip | default('') }}"
-    os_instance_auto_ip: yes
+    os_instance_auto_ip: "{{ openstack_instance_auto_ip | default('yes') }}"
   tasks:
   - name: Check connectivity and authentication to the OpenStack Cloud
     os_auth:
