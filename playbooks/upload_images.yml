@@ -1,0 +1,34 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Check connectivity and authentication to the OpenStack Cloud
+    os_auth:
+      auth: "{{ general_os_auth }}"
+
+  - name: Download the cloud image locally
+    get_url:
+      url: "{{ openstack_image.url }}"
+      dest: /tmp/{{ openstack_image.url | basename }}
+    loop: "{{ openstack_images }}"
+    loop_control:
+      loop_var: openstack_image
+
+  - name: Upload the downloaded image to OpenStack Image service (Glance)
+    os_image:
+      auth: "{{ general_os_auth }}"
+      name: "{{ openstack_image.name }}"
+      container_format: "{{ openstack_image.container_format | default('bare') }}"
+      disk_format: "{{ openstack_image.disk_format | default('qcow2') }}"
+      state: present
+      filename: "/tmp/{{ openstack_image.url | basename }}"
+      kernel: "{{ openstack_image.kernal | default(omit) }}"
+      ramdisk: "{{ openstack_image.ramdisk | default(omit) }}"
+      min_disk: "{{ openstack_image.min_disk | default(omit) }}"
+      min_ram: "{{ openstack_image.min_ram | default(omit) }}"
+      properties:
+        cpu_arch: "{{ openstack_image.properties.cpu_arch | default('x86_64') }}"
+        os_distro: "{{ openstack_image.properties.os_distro | default(omit) }}"
+        os_version: "{{ openstack_image.properties.os_version | default(omit) }}"
+    loop: "{{ openstack_images }}"
+    loop_control:
+      loop_var: openstack_image

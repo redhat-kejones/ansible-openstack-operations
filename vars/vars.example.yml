@@ -1,8 +1,15 @@
 domain: example.com
 dns_server_local: 1.1.1.1
 openstack_public_ip: 192.168.0.10
-
 openstack_domain: default
+general_os_auth:
+  auth_url: http://{{ openstack_public_ip }}:5000/v3
+  username: admin
+  password: p@ssw0rd
+  project_name: admin
+  project_domain_name: "{{ openstack_domain | default('default') }}"
+  user_domain_name: "{{ openstack_domain | default('default') }}"
+
 openstack_admin_usernames:
   - admin
 openstack_project_quotas_instances: 10
@@ -34,10 +41,18 @@ openstack_project_security_groups:
         port_range_max: 443
         remote_ip_prefix: 0.0.0.0/0
 
-general_os_auth:
-  auth_url: http://{{ openstack_public_ip }}:5000/v3
-  username: admin
-  password: p@ssw0rd
-  project_name: admin
-  project_domain_name: "{{ openstack_domain | default('default') }}"
-  user_domain_name: "{{ openstack_domain | default('default') }}"
+openstack_images:
+  - name: Cirros-0.4.0
+    url: "http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img"
+    min_disk: "1"
+    min_ram: 64
+    properties:
+      os_distro: linux
+      os_version: "0.4.0"
+  - name: CentOS-7-GenericCloud
+    url: "http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2"
+    min_disk: "10"
+    min_ram: 1024
+    properties:
+      os_distro: centos
+      os_version: "7"
