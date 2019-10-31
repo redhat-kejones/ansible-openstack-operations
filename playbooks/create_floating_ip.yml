@@ -25,8 +25,11 @@
       var: openstack_external_network_results.id
 
   - name: "Create floating ip"
+    vars:
+      #openstack_network_api_port: 9696 #non-ssl
+      openstack_network_api_port: 13696
     uri:
-      url: "http://{{ openstack_public_ip }}:9696/v2.0/floatingips"
+      url: "{{ openstack_public_url }}:{{ openstack_network_api_port }}/v2.0/floatingips"
       method: POST
       status_code: 201
       headers:

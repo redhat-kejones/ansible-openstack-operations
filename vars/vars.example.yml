@@ -6,9 +6,10 @@ rhsm_password: p@ssw0rd
 rhsm_pool: '***********'
 
 openstack_public_ip: 192.168.0.10
+openstack_public_url: http://{{ openstack_public_ip }}
 openstack_domain: default
 general_os_auth:
-  auth_url: http://{{ openstack_public_ip }}:5000/v3
+  auth_url: "{{ openstack_public_url }}:5000/v3"
   username: admin
   password: p@ssw0rd
   project_name: admin
@@ -61,3 +62,30 @@ openstack_images:
     properties:
       os_distro: centos
       os_version: "7"
+
+openstack_flavors:
+  - name: m1.tiny
+    ram: 256
+    vcpus: 1
+    root_disk: 1
+    ephemeral_disk: 0
+  - name: m1.small
+    ram: 1024
+    vcpus: 1
+    root_disk: 10
+    ephemeral_disk: 0
+  - name: m1.medium
+    ram: 2048
+    vcpus: 2
+    root_disk: 20
+    ephemeral_disk: 0
+  - name: m1.large
+    ram: 4096
+    vcpus: 4
+    root_disk: 40
+    ephemeral_disk: 0
+  - name: m1.xlarge
+    ram: 8192
+    vcpus: 8
+    root_disk: 80
+    ephemeral_disk: 0
