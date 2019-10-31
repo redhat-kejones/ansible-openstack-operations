@@ -1,5 +1,10 @@
 domain: example.com
 dns_server_local: 1.1.1.1
+
+rhsm_username: rhnuser
+rhsm_password: p@ssw0rd
+rhsm_pool: '***********'
+
 openstack_public_ip: 192.168.0.10
 openstack_domain: default
 general_os_auth:

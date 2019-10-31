@@ -1,4 +1,8 @@
 ---
+# Example:
+# ansible-playbook -i inventory/inventory.yml -e@vars/vars.yml playbooks/launch_instance.yml \
+# --extra-vars "openstack_instance_name=new-instance.example.com openstack_instance_keypair_name=operator openstack_instance_image=rhel76 openstack_instance_flavor=m1.large"
+
 - hosts: localhost
   vars:
     os_auth: "{{ general_os_auth }}"

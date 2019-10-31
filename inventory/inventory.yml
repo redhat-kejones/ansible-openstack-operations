@@ -4,3 +4,6 @@ all:
     localhost:
       ansible_python_interpreter: python
       ansible_connection: local
+    tower:
+      ansible_host: "{{ tower_public_ip }}"
+      ansible_ssh_user: "cloud-user"

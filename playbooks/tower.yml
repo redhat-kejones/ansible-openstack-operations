@@ -1,0 +1,37 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    os_instance_name: "{{ tower_hostname }}.{{ domain }}"
+    os_instance_image: rhel76
+    os_instance_key_name: kdj
+    os_instance_flavor: m1.large
+    os_instance_auto_ip: no
+  tasks:
+  - name: Provision Tower
+    vars:
+      os_auth: "{{ general_os_auth }}"
+    include_role:
+      name: RedHatGov.tower
+      tasks_from: provision_openstack
+    tags: provision
+
+  - name: Refresh inventory to discover Tower instance
+    meta: refresh_inventory
+    tags: provision
+
+- hosts: tower
+  become: yes
+  tasks:
+  - name: Register to RHSM
+    vars:
+      rhsm_consumer_name: "{{ tower_hostname }}.{{ domain }}"
+      rhsm_repos: "{{ tower_repos }}"
+    include_role:
+      name: RedHatGov.rhsm
+    tags: install
+
+  - name: Install Tower
+    include_role:
+      name: RedHatGov.tower
+    tags: install
