@@ -1,0 +1,26 @@
+---
+# Example:
+# $ ansible-playbook -i inventory/inventory.yml -e@vars/vars.yml playbooks/create_user.yml \
+# --extra-vars "openstack_user_name=user1 openstack_user_password=p@ssw0rd openstack_user_email=user1@example.com openstack_user_default_project=demo"
+- hosts: localhost
+  tasks:
+  - name: Check connectivity and authentication to the OpenStack Cloud
+    os_auth:
+      auth: "{{ general_os_auth }}"
+
+  - name: Create an OpenStack user
+    os_user:
+      auth: "{{ general_os_auth }}"
+      state: present
+      name: "{{ openstack_user_name }}"
+      password: "{{ openstack_user_password }}"
+      email: "{{ openstack_user_email }}"
+      domain: "{{ openstack_domain }}"
+      default_project: "{{ openstack_user_default_project }}"
+
+  - name: Grant user role on default project
+    os_user_role:
+      auth: "{{ general_os_auth }}"
+      user: "{{ openstack_user_name }}"
+      role: "{{ openstack_user_default_project_role | default('_member_') }}"
+      project: "{{ openstack_user_default_project }}"
