@@ -1,0 +1,19 @@
+---
+# Example:
+# $ ansible-playbook -i inventory/inventory.yml -e@vars/vars.yml playbooks/add_user_to_project.yml \
+# --extra-vars '{"openstack_user": "user1","openstack_project": "demo","openstack_user_project_roles": ["_member_","admin"]}'
+- hosts: localhost
+  tasks:
+  - name: Check connectivity and authentication to the OpenStack Cloud
+    os_auth:
+      auth: "{{ general_os_auth }}"
+
+  - name: Grant user role on default project
+    os_user_role:
+      auth: "{{ general_os_auth }}"
+      user: "{{ openstack_user }}"
+      role: "{{ openstack_user_project_role }}"
+      project: "{{ openstack_project }}"
+    loop: "{{ openstack_user_project_roles | default(['_member_']) }}"
+    loop_control:
+      loop_var: openstack_user_project_role

@@ -1,0 +1,22 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Check connectivity and authentication to the OpenStack Cloud
+    os_auth:
+      auth: "{{ general_os_auth }}"
+
+  - debug:
+      var: service_catalog
+
+  - name: Create flavors
+    os_nova_flavor:
+      auth: "{{ general_os_auth }}"
+      state: present
+      name: "{{ openstack_flavor.name }}"
+      ram: "{{ openstack_flavor.ram }}"
+      vcpus: "{{ openstack_flavor.vcpus }}"
+      disk: "{{ openstack_flavor.root_disk }}"
+      ephemeral: "{{ openstack_flavor.ephemeral_disk }}"
+    loop: "{{ openstack_flavors }}"
+    loop_control:
+      loop_var: openstack_flavor
