@@ -1,6 +1,6 @@
 ---
 - hosts: localhost
-  name: playbook to shutdown all systems and services
+  name: playbook to shutdown all ceph systems and services
   gather_facts: false
   remote_user: root
   tasks:
@@ -9,59 +9,12 @@
       prompt:
         'Please confirm you want to shutdown the environment. Press return to continue. Press Ctrl+c and then "a" to abort'
 
-  - name: authenticate to the cloud and retrieve the service catalog
-    os_auth:
-      auth: "{{ general_os_auth | default(omit) }}"
+  - name: get health of ceph cluster
+    command: ssh de13 ceph health
+    register: ceph_health
 
-  - name: get list of openstack projects
-    os_project_info:
-      auth: "{{ general_os_auth | default(omit) }}"
-      domain: default
-    register: openstack_project_result
-
-  - name: get list of all instances
-    os_server_info:
-      auth: "{{ general_os_auth | default(omit) }}"
-      filters:
-        vm_state: active
-      all_projects: yes
-    register: openstack_server_result
-
-  #TODO: hack for now, to hardcode domain. have to ignore errors
-  - name: stop all instances in each project in default domain
-    os_server_action:
-      action: stop
-      #auth: "{{ general_os_auth | default(omit) }}"
-      auth:
-        auth_url: "{{ openstack_public_url }}:13000/v3"
-        username: "{{ openstack_default_username }}"
-        password: "{{ openstack_default_password }}"
-        project_id: "{{ server.project_id }}"
-        project_domain_name: default
-        user_domain_name: default
-      server: "{{ server.id }}"
-      timeout: 200
-    loop: "{{ openstack_server_result.openstack_servers }}"
-    loop_control:
-      loop_var: server
-    ignore_errors: true
-
-  - name: stop all instances in each project in ldap domain
-    os_server_action:
-      action: stop
-      auth:
-        auth_url: "{{ openstack_public_url }}:13000/v3"
-        username: "{{ openstack_ldap_username }}"
-        password: "{{ openstack_ldap_password }}"
-        project_id: "{{ server.project_id }}"
-        project_domain_name: ldap
-        user_domain_name: ldap
-      server: "{{ server.id }}"
-      timeout: 200
-    loop: "{{ openstack_server_result.openstack_servers }}"
-    loop_control:
-      loop_var: server
-    ignore_errors: true
+  - debug:
+      var: ceph_health
   
   - name: shutdown cloud confirmation
     pause:

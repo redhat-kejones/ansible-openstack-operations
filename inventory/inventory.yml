@@ -13,3 +13,18 @@ all:
     director:
       ansible_host: "{{ director_public_ip }}"
       ansible_ssh_user: "stack"
+      ansible_ssh_port: 22
+  children:
+    ceph_mons:
+      hosts:
+        de13:
+        de15:
+        de17:
+    ceph_rgw:
+      hosts:
+        146.165.25.16:
+        146.165.25.17:      
+    ceph_rgw_proxies:
+      hosts:
+        146.165.25.47:
+        146.165.25.48:      

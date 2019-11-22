@@ -64,13 +64,31 @@
 
   - name: waiting for horizon to come online
     wait_for:
-      host: "{{ overcloud_public_ip }}"
+      host: "{{ openstack_public_ip }}"
       state: started
       connect_timeout: 5
       timeout: 300
-      port: 80
+      port: 443
     delegate_to: 127.0.0.1
     become: false
+
+  - name: Pause playbook execution for 30 seconds
+    pause:
+      seconds: 30
+
+  #NOTE: Added due to bz https://bugzilla.redhat.com/show_bug.cgi?id=1636510
+  - name: get provisioning IPs for overcloud controllers
+    become: yes
+    become_user: stack
+    shell: "source /home/stack/stackrc && openstack server list -f value | grep controller | cut -d = -f 2 | cut -d ' ' -f 1"
+    register: overcloud_controller_prov_ips
+
+  - name: correct ownership of horizon log on controllers
+    become: yes
+    become_user: stack
+    shell: "ssh heat-admin@{{ item }} sudo docker exec -u root horizon chown apache: /var/log/horizon/horizon.log"
+    with_items:
+      - "{{ overcloud_controller_prov_ips.stdout_lines }}"
 
   - name: Pause playbook execution for 30 seconds
     pause:
@@ -85,26 +103,50 @@
       auth: "{{ general_os_auth | default(omit) }}"
 
   - name: get list of openstack projects
-    os_project_facts:
+    os_project_info:
       auth: "{{ general_os_auth | default(omit) }}"
+      domain: default
+    register: openstack_project_result
 
-  - name: get list of instances per project
-    os_server_facts:
+  - name: get list of all instances
+    os_server_info:
       auth: "{{ general_os_auth | default(omit) }}"
-    with_items:
-      - "{{ openstack_projects }}"
-    ignore_errors: true
+      #filters:
+      #  vm_state: shutoff
+      all_projects: yes
+    register: openstack_server_result
 
-  - debug:
-      msg: "{{ openstack_projects }}"
-  
-  - name: start all instances in each project
+  #TODO: hack for now, to hardcode domain. have to ignore errors
+  - name: start all instances in each project in default domain
     os_server_action:
       action: start
-      auth: "{{ general_os_auth | default(omit) }}"
-      server: "{{ item.name }}"
+      auth:
+        auth_url: "{{ openstack_public_url }}:13000/v3"
+        username: "{{ openstack_default_username }}"
+        password: "{{ openstack_default_password }}"
+        project_id: "{{ server.project_id }}"
+        project_domain_name: default
+        user_domain_name: default
+      server: "{{ server.id }}"
       timeout: 200
-      wait: yes
-    with_items:
-      - "{{ openstack_servers }}"
+    loop: "{{ openstack_server_result.openstack_servers }}"
+    loop_control:
+      loop_var: server
+    ignore_errors: true
+
+  - name: start all instances in each project in ldap domain
+    os_server_action:
+      action: start
+      auth:
+        auth_url: "{{ openstack_public_url }}:13000/v3"
+        username: "{{ openstack_ldap_username }}"
+        password: "{{ openstack_ldap_password }}"
+        project_id: "{{ server.project_id }}"
+        project_domain_name: ldap
+        user_domain_name: ldap
+      server: "{{ server.id }}"
+      timeout: 200
+    loop: "{{ openstack_server_result.openstack_servers }}"
+    loop_control:
+      loop_var: server
     ignore_errors: true
