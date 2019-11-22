@@ -1,0 +1,68 @@
+---
+# Example:
+# ansible-playbook -i inventory/inventory.yml -e@vars/vars.yml playbooks/launch_instance.yml \
+# --extra-vars "openstack_instance_name=new-instance.example.com openstack_instance_keypair_name=operator openstack_instance_image=rhel76 openstack_instance_flavor=m1.large"
+
+- hosts: localhost
+  vars_files:
+  - ../secrets/vars-state.yml
+  vars:
+    os_auth: "{{ general_os_auth }}"
+    os_instance_name: "{{ openstack_instance_name | default('os-instance-'+ 9999 | random | to_uuid + '.'+ domain) }}"
+    os_instance_key_name: "{{ openstack_instance_keypair_name | default('operator') }}"
+    os_instance_image: "{{ openstack_instance_image | default('cirros') }}"
+    os_instance_flavor: "{{ openstack_instance_flavor | default('m1.tiny') }}"
+    os_instance_auto_ip: "{{ openstack_instance_auto_ip | default('no') }}"
+    os_instance_network: "{{ openstack_instance_network | default('private') }}"
+  tasks:
+  - name: Check connectivity and authentication to the OpenStack Cloud
+    os_auth:
+      auth: "{{ general_os_auth }}"
+
+  - name: Get info for extneral network
+    os_network:
+      auth: "{{ general_os_auth }}"
+      state: present
+      name: "{{ openstack_external_network | default('public') }}"
+    register: openstack_external_network_results
+
+  - debug:
+      var: openstack_external_network_results
+
+  - debug:
+      var: openstack_external_network_results.id
+
+  - name: "Create floating ip"
+    vars:
+      openstack_network_api_port: 9696 #non-ssl
+      #openstack_network_api_port: 13696
+    uri:
+      url: "{{ openstack_public_url }}:{{ openstack_network_api_port }}/v2.0/floatingips"
+      method: POST
+      status_code: 201
+      headers:
+        X-Auth-Token: "{{ auth_token }}"
+      body_format: json
+      body: '
+        {
+          "floatingip": {
+            "floating_network_id": "{{ openstack_external_network_results.id }}"
+          }
+        }'
+    register: floating_ip_create
+
+  - debug:
+      var: floating_ip_create.json.floatingip.floating_ip_address
+
+  - name: Add keypair using /var/lib/awx/.ssh/id_rsa.pub from tower user
+    os_keypair:
+      auth: "{{ general_os_auth }}"
+      state: present
+      name: "tower-keypair"
+      public_key: "{{ lookup('file', '../files/tower_id_rsa.pub') }}"
+
+  - name: Launch an OpenStack instance
+    vars:
+      os_instance_floating_ip: "{{ floating_ip_create.json.floatingip.floating_ip_address }}"
+    include_role:
+      name: RedHatGov.openstack_instance
