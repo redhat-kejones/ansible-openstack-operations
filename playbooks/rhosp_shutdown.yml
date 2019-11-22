@@ -14,23 +14,56 @@
       auth: "{{ general_os_auth | default(omit) }}"
 
   - name: get list of openstack projects
-    os_project_facts:
+    os_project_info:
       auth: "{{ general_os_auth | default(omit) }}"
+      domain: default
+    register: openstack_project_result
 
-  - name: get list of instances per project
-    os_server_facts:
+  - debug:
+      var: openstack_project_result
+
+  - name: get list of all instances
+    os_server_info:
       auth: "{{ general_os_auth | default(omit) }}"
-    with_items:
-      - "{{ openstack_projects }}"
+      filters:
+        vm_state: active
+      all_projects: yes
+    register: openstack_server_result
 
-  - name: stop all instances in each project
+  #TODO: hack for now, to hardcode domain. have to ignore errors
+  - name: stop all instances in each project in default domain
     os_server_action:
       action: stop
-      auth: "{{ general_os_auth | default(omit) }}"
-      server: "{{ item.name }}"
+      #auth: "{{ general_os_auth | default(omit) }}"
+      auth:
+        auth_url: "{{ openstack_public_url }}:13000/v3"
+        username: "{{ openstack_default_username }}"
+        password: "{{ openstack_default_password }}"
+        project_id: "{{ server.project_id }}"
+        project_domain_name: default
+        user_domain_name: default
+      server: "{{ server.id }}"
       timeout: 200
-    with_items:
-      - "{{ openstack_servers }}"
+    loop: "{{ openstack_server_result.openstack_servers }}"
+    loop_control:
+      loop_var: server
+    ignore_errors: true
+
+  - name: stop all instances in each project in ldap domain
+    os_server_action:
+      action: stop
+      auth:
+        auth_url: "{{ openstack_public_url }}:13000/v3"
+        username: "{{ openstack_ldap_username }}"
+        password: "{{ openstack_ldap_password }}"
+        project_id: "{{ server.project_id }}"
+        project_domain_name: ldap
+        user_domain_name: ldap
+      server: "{{ server.id }}"
+      timeout: 200
+    loop: "{{ openstack_server_result.openstack_servers }}"
+    loop_control:
+      loop_var: server
     ignore_errors: true
   
   - name: shutdown cloud confirmation
@@ -99,52 +132,6 @@
       timeout: 300
       port: 22
     connection: local
-    become: false
-    ignore_errors: true
-
-- hosts: content
-  name: play to shutdown Content server
-  gather_facts: false
-  remote_user: root
-  tasks:
-  - name: poweroff Content
-    shell: sleep 2 && /sbin/shutdown -c && /sbin/shutdown -h now
-    async: 1
-    poll: 0
-    ignore_errors: true
-
-  - name: waiting for Content to poweroff
-    wait_for:
-      host: "{{ content_public_ip }}"
-      state: stopped
-      delay: 10
-      connect_timeout: 5
-      timeout: 300
-      port: 22
-    delegate_to: 127.0.0.1
-    become: false
-    ignore_errors: true
-
-- hosts: idm
-  name: play to shutdown IdM
-  gather_facts: false
-  remote_user: root
-  tasks:
-  - name: poweroff IdM
-    shell: sleep 2 && /sbin/shutdown -c && /sbin/shutdown -h now
-    async: 1
-    poll: 0
-    ignore_errors: true
-
-  - name: waiting for IdM to poweroff
-    wait_for:
-      host: "{{ idm_public_ip }}"
-      state: stopped
-      delay: 10
-      connect_timeout: 5
-      timeout: 300
-      port: 22
-    delegate_to: 127.0.0.1
     become: false
     ignore_errors: true
 

@@ -7,3 +7,9 @@ all:
     tower:
       ansible_host: "{{ tower_public_ip }}"
       ansible_ssh_user: "cloud-user"
+    kvm:
+      ansible_host: "{{ kvm_public_ip }}"
+      ansible_ssh_user: "root"
+    director:
+      ansible_host: "{{ director_public_ip }}"
+      ansible_ssh_user: "stack"
