@@ -3,7 +3,7 @@ appdirs==1.4.3
 certifi==2019.9.11
 cffi==1.13.1
 chardet==3.0.4
-cryptography==2.8
+cryptography==3.2
 decorator==4.4.1
 distro==1.4.0
 dogpile.cache==0.9.0
