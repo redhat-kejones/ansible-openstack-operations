@@ -28,7 +28,7 @@ pbr==5.4.3
 proxmoxer==1.0.3
 pycparser==2.19
 pycurl==7.43.0.3
-PyYAML==5.1.2
+PyYAML==5.4
 requests==2.22.0
 requestsexceptions==1.4.0
 selinux==0.2.1
