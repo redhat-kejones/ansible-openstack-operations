@@ -34,4 +34,4 @@ requestsexceptions==1.4.0
 selinux==0.2.1
 six==1.12.0
 stevedore==1.31.0
-urllib3==1.25.6
+urllib3==1.26.5
